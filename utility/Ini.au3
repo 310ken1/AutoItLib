@@ -56,6 +56,17 @@ Func __IniWriteComboItemDefault($hWnd, Const $ini, Const $section, Const $key = 
 	IniWrite($ini, $section, $key, GUICtrlRead($hWnd))
 EndFunc   ;==>__IniWriteComboItemDefault
 
+; iniファイルに保存された初期値をチェックボックの値にする
+Func __IniReadCheckDefault(Const $hWnd, Const $ini, Const $section, Const $key = "default")
+	GUICtrlSetState($hWnd, IniRead($ini, $section, $key, $GUI_UNCHECKED))
+EndFunc   ;==>__IniReadCheckDefault
+
+; iniファイルにチェックボックの値を初期値として保存する
+Func __IniWriteCheckDefault($hWnd, Const $ini, Const $section, Const $key = "default")
+	IniWrite($ini, $section, $key, GUICtrlRead($hWnd))
+EndFunc   ;==>__IniWriteCheckDefault
+
+
 ;===============================================================================
 ; テスト
 ;===============================================================================
