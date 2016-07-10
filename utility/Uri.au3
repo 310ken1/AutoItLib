@@ -63,6 +63,21 @@ Func __UrlPath(Const $uri)
 	Return $path
 EndFunc   ;==>__UrlPath
 
+; URLをファイルパスへ変換する.
+Func __UrlToFile(Const $url)
+	Local $filepath = ""
+	Local $server = __UrlDomain($url)
+	If $server <> "" Then
+		$filepath = '\\' & $server
+	EndIf
+	Local $path = __UrlPath($url)
+	If $path <> "" Then
+		$filepath = $filepath & StringReplace($path, '/', '\')
+	EndIf
+	__d($UriDebug, "__UrlToFile(" & $url & ") return=" & $filepath)
+	Return $filepath
+EndFunc   ;==>__UrlToFile
+
 ;===============================================================================
 ; テスト
 ;===============================================================================
@@ -109,6 +124,14 @@ Func __UrlTest()
 	_Assert('"server" = __UrlDomain("server/path1/")')
 	_Assert('"" = __UrlPort("server/path1/")')
 	_Assert('"/path1/" = __UrlPath("server/path1/")')
+
+	_Assert('"\\server\path1\path2" = __UrlToFile("user:pass@server:80/path1/path2")')
+	_Assert('"\\server" = __UrlToFile("aaa:bbb@server:80")')
+	_Assert('"\\server" = __UrlToFile("aaa:bbb@server")')
+	_Assert('"\\server\path1\path2\" = __UrlToFile("server:80/path1/path2/")')
+	_Assert('"\\server" = __UrlToFile("server:80")')
+	_Assert('"\\server" = __UrlToFile("server")')
+	_Assert('"\\server\path1\" = __UrlToFile("server/path1/")')
 EndFunc   ;==>__UrlTest
 
 If "Uri.au3" = @ScriptName Then
