@@ -1,6 +1,13 @@
 #include-once
 #include <Debug.au3>
 #include <Array.au3>
+#include "Debug.au3"
+
+;===============================================================================
+; 変数定義
+;===============================================================================
+; デバッグフラグ.
+Global $__EventDebug = False
 
 ;===============================================================================
 ; 関数定義
@@ -34,6 +41,7 @@ Func __EventNotify(Const ByRef $handle)
 	Local $count = 0
 	For $i = 0 To UBound($handle) - 1
 		Local $func = $handle[$i]
+		__d($__EventDebug, $func)
 		Call($func)
 		$count += 1
 	Next
