@@ -15,5 +15,5 @@ Func __TeraTermInclude(Const $path)
 	FileInstall("ttpset.dll", $path)
 	FileInstall("ttxssh.dll", $path)
 	FileInstall("TERATERM.INI", $path)
-	$TeraTermMacro = $path & "\ttpmacro.exe"
+	$__TeraTermMacro = $path & "\ttpmacro.exe"
 EndFunc   ;==>__TeraTermInclude
