@@ -25,7 +25,7 @@ Global $__TeraTermMacro = "ttpmacro.exe"
 Func __TeraTermMacroRun(Const $ttl)
 	Local $cmd = StringFormat("%s %s", $__TeraTermMacro, $ttl)
 	__d($__TeraTermDebug, $cmd)
-	Run($cmd)
+	Run($cmd, "", @SW_HIDE)
 	WinWaitActive($___TeraTermMacroTitle)
 EndFunc   ;==>__TeraTermMacroRun
 
@@ -34,7 +34,7 @@ EndFunc   ;==>__TeraTermMacroRun
 Func __TeraTermMacroRunWait(Const $ttl)
 	Local $cmd = StringFormat("%s %s", $__TeraTermMacro, $ttl)
 	__d($__TeraTermDebug, $cmd)
-	RunWait($cmd)
+	RunWait($cmd, "", @SW_HIDE)
 EndFunc   ;==>__TeraTermMacroRunWait
 
 ; TeraTerm Macroの実行が終了するまで待つ.
