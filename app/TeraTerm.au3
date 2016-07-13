@@ -25,8 +25,9 @@ Global $__TeraTermMacro = "ttpmacro.exe"
 Func __TeraTermMacroRun(Const $ttl)
 	Local $cmd = StringFormat("%s %s", $__TeraTermMacro, $ttl)
 	__d($__TeraTermDebug, $cmd)
-	Run($cmd, "", @SW_HIDE)
+	Local $process = Run($cmd, "", @SW_HIDE)
 	WinWaitActive($___TeraTermMacroTitle)
+	Return $process
 EndFunc   ;==>__TeraTermMacroRun
 
 ; TeraTerm Macroを実行し、実行が完了するまでスクリプト処理を一時停止する.
