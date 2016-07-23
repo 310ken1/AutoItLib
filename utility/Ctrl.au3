@@ -8,12 +8,16 @@ Opt("GUIOnEventMode", 1)
 ;===============================================================================
 ; 定数定義
 ;===============================================================================
+Global Const $__Ctrl_ITEM_INDEX_TEXT = 0
+Global Const $__Ctrl_ITEM_INDEX_EVENT = 1
+Global Const $__Ctrl_ITEM_INDEX_MAX = 2
+
 Global Const $__CtrlBuild_INDEX_CTRL = 0
-Global Const $__CtrlBuild_INDEX_CTRL_TEXTS = 1
-Global Const $__CtrlBuild_INDEX_CTRL_EVENTS = 2
-Global Const $__CtrlBuild_INDEX_CTRL_HEIGHT = 3
-Global Const $__CtrlBuild_INDEX_CTRL_HANDLES = 4
-Global Const $__CtrlBuild_INDEX_MAX = 5
+Global Const $__CtrlBuild_INDEX_CTRL_ITEMS = 1
+Global Const $__CtrlBuild_INDEX_CTRL_HEIGHT = 2
+Global Const $__CtrlBuild_INDEX_CTRL_IDS = 3
+Global Const $__CtrlBuild_INDEX_MAX = 4
+
 
 ;===============================================================================
 ; 変数定義
@@ -57,23 +61,26 @@ Func __CtrlGroupCol(Const $index, Const $count, Const $start_x, Const $width, Co
 EndFunc   ;==>__CtrlGroupCol
 
 ; コントロールを指定個数敷き詰める.
-Func __CtrlTile(ByRef Const $texts, Const $ctrl, Const $x, Const $y, _
+Func __CtrlTile(ByRef Const $items, Const $ctrl, Const $x, Const $y, _
 		Const $width, Const $col_max, Const $ctrl_height)
-	Local $handles[0]
-	Local $count = UBound($texts)
+	Local $ids[0]
+	Local $count = UBound($items)
 
 	Local $index = 1
 	Local $ctrl_y = $y
 	For $i = 0 To $count - 1
-		If "" <> $texts[$i] Then
+		Local $text = $items[$i][$__Ctrl_ITEM_INDEX_TEXT]
+		Local $event = $items[$i][$__Ctrl_ITEM_INDEX_EVENT]
+		If "" <> $text Then
 			Local $ctrl_x = __CtrlCol($index, $col_max, $x, $width)
 			Local $ctrl_width = __CtrlWidth($col_max, $width)
-			Local $handle = Call($ctrl, _
-					$texts[$i], $ctrl_x, $ctrl_y, $ctrl_width, $ctrl_height)
-			__d($__CtrlDebug, "__CtrlTile() handle=" & $handle)
-			_ArrayAdd($handles, $handle)
+			Local $id = Call($ctrl, _
+					$text, $ctrl_x, $ctrl_y, $ctrl_width, $ctrl_height)
+			GUICtrlSetOnEvent($id, $event)
+			__d($__CtrlDebug, "__CtrlTile() text=" & $text & " id=" & $id & " event=" & $event)
+			_ArrayAdd($ids, $id)
 		Else
-			_ArrayAdd($handles, -1)
+			_ArrayAdd($ids, -1)
 		EndIf
 		$index += 1
 		If $col_max < $index Then
@@ -81,35 +88,35 @@ Func __CtrlTile(ByRef Const $texts, Const $ctrl, Const $x, Const $y, _
 			$ctrl_y += $ctrl_height
 		EndIf
 	Next
-	Return $handles
+	Return $ids
 EndFunc   ;==>__CtrlTile
 
 ; __CtrlTile()で生成したコントロールの高さを取得する.
-Func __CtrlTileHeight(ByRef Const $texts, Const $col_max, Const $ctrl_height)
-	Local $count = UBound($texts)
+Func __CtrlTileHeight(ByRef Const $items, Const $col_max, Const $ctrl_height)
+	Local $count = UBound($items)
 	Local $row_max = Ceiling($count / $col_max)
 	Local $group_height = $row_max * $ctrl_height
 	Return $group_height
 EndFunc   ;==>__CtrlTileHeight
 
 ; グループ内にコントロールを指定個数敷き詰める.
-Func __CtrlGroupTile(Const $name, Const $texts, Const $ctrl, Const $x, Const $y, _
+Func __CtrlGroupTile(Const $name, Const $items, Const $ctrl, Const $x, Const $y, _
 		Const $width, Const $col_max, Const $ctrl_height)
-	Local $group_height = __CtrlGroupTileHeight($texts, $col_max, $ctrl_height)
+	Local $group_height = __CtrlGroupTileHeight($items, $col_max, $ctrl_height)
 	Local $ctrl_x = $x + $__CtrlGroupSideMargin
 	Local $ctrl_y = $y + $__CtrlGroupTopMargin
 	Local $ctrl_width = $width - ($__CtrlGroupSideMargin * 2)
 
 	GUICtrlCreateGroup($name, $x, $y, $width, $group_height)
-	Local $handles = __CtrlTile($texts, $ctrl, _
+	Local $ids = __CtrlTile($items, $ctrl, _
 			$ctrl_x, $ctrl_y, $ctrl_width, $col_max, $ctrl_height)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
-	Return $handles
+	Return $ids
 EndFunc   ;==>__CtrlGroupTile
 
 ; __CtrlGroupTile()で生成したグループの高さを取得する.
-Func __CtrlGroupTileHeight(Const $texts, Const $col_max, Const $ctrl_height)
-	Local $count = UBound($texts)
+Func __CtrlGroupTileHeight(Const $items, Const $col_max, Const $ctrl_height)
+	Local $count = UBound($items)
 	Local $row_max = Ceiling($count / $col_max)
 	Local $group_height = $row_max * $ctrl_height _
 			 + $__CtrlGroupTopMargin + $__CtrlGroupButtomMargin
@@ -117,74 +124,70 @@ Func __CtrlGroupTileHeight(Const $texts, Const $col_max, Const $ctrl_height)
 EndFunc   ;==>__CtrlGroupTileHeight
 
 ; コントロールを構成する
-Func __CtrlBuild(ByRef $items, Const $start_x, Const $start_y, Const $width)
+Func __CtrlBuild(ByRef $ctrls, Const $start_x, Const $start_y, Const $width)
 	Local $y = $start_y
-	For $i = 0 To UBound($items) - 1
-		Local $ctrl = $items[$i][$__CtrlBuild_INDEX_CTRL]
-		Local $ctrl_texts = $items[$i][$__CtrlBuild_INDEX_CTRL_TEXTS]
-		Local $ctrl_height = $items[$i][$__CtrlBuild_INDEX_CTRL_HEIGHT]
-		Local $ctrl_count = UBound($ctrl_texts)
-		$items[$i][$__CtrlBuild_INDEX_CTRL_HANDLES] = _
-				__CtrlTile($ctrl_texts, $ctrl, $start_x, $y, $width, $ctrl_count, $ctrl_height)
+	For $i = 0 To UBound($ctrls) - 1
+		Local $ctrl = $ctrls[$i][$__CtrlBuild_INDEX_CTRL]
+		Local $ctrl_items = $ctrls[$i][$__CtrlBuild_INDEX_CTRL_ITEMS]
+		Local $ctrl_height = $ctrls[$i][$__CtrlBuild_INDEX_CTRL_HEIGHT]
+		Local $ctrl_count = UBound($ctrl_items)
+		$ctrls[$i][$__CtrlBuild_INDEX_CTRL_IDS] = _
+				__CtrlTile($ctrl_items, $ctrl, $start_x, $y, $width, $ctrl_count, $ctrl_height)
 		$y += $ctrl_height
 	Next
-
-	___CtrlBuildSetOnEvent($items)
 EndFunc   ;==>__CtrlBuild
 
 ; __CtrlBuild()で生成したコントロールの高さを取得する.
-Func __CtrlBuildHeight(ByRef Const $items)
+Func __CtrlBuildHeight(ByRef Const $ctrls)
 	Local $height = 0
-	For $i = 0 To UBound($items) - 1
-		Local $ctrl_texts = $items[$i][$__CtrlBuild_INDEX_CTRL_TEXTS]
-		Local $ctrl_height = $items[$i][$__CtrlBuild_INDEX_CTRL_HEIGHT]
-		Local $ctrl_count_max = UBound($ctrl_texts)
-		$height += __CtrlTileHeight($ctrl_texts, $ctrl_count_max, $ctrl_height)
+	For $i = 0 To UBound($ctrls) - 1
+		Local $ctrl_items = $ctrls[$i][$__CtrlBuild_INDEX_CTRL_ITEMS]
+		Local $ctrl_height = $ctrls[$i][$__CtrlBuild_INDEX_CTRL_HEIGHT]
+		Local $ctrl_count_max = UBound($ctrl_items)
+		$height += __CtrlTileHeight($ctrl_items, $ctrl_count_max, $ctrl_height)
 	Next
 	Return $height
 EndFunc   ;==>__CtrlBuildHeight
 
 ; コントロールグループを構成する
-Func __CtrlGroupBuild(Const $group_name, ByRef $items, Const $start_x, Const $start_y, Const $width)
-	Local $group_height = __CtrlGroupBuildHeight($items)
+Func __CtrlGroupBuild(Const $group_name, ByRef $ctrls, Const $start_x, Const $start_y, Const $width)
+	Local $group_height = __CtrlGroupBuildHeight($ctrls)
 	Local $ctrl_x = $start_x + $__CtrlGroupSideMargin
 	Local $ctrl_y = $start_y + $__CtrlGroupTopMargin
 	Local $ctrl_width = $width - ($__CtrlGroupSideMargin * 2)
 
 	GUICtrlCreateGroup($group_name, $start_x, $start_y, $width, $group_height)
 	Local $y = $ctrl_y
-	For $i = 0 To UBound($items) - 1
-		Local $ctrl = $items[$i][$__CtrlBuild_INDEX_CTRL]
-		Local $ctrl_texts = $items[$i][$__CtrlBuild_INDEX_CTRL_TEXTS]
-		Local $ctrl_height = $items[$i][$__CtrlBuild_INDEX_CTRL_HEIGHT]
-		Local $ctrl_count_max = UBound($ctrl_texts)
-		$items[$i][$__CtrlBuild_INDEX_CTRL_HANDLES] = _
-				__CtrlTile($ctrl_texts, $ctrl, _
+	For $i = 0 To UBound($ctrls) - 1
+		Local $ctrl = $ctrls[$i][$__CtrlBuild_INDEX_CTRL]
+		Local $ctrl_items = $ctrls[$i][$__CtrlBuild_INDEX_CTRL_ITEMS]
+		Local $ctrl_height = $ctrls[$i][$__CtrlBuild_INDEX_CTRL_HEIGHT]
+		Local $ctrl_count_max = UBound($ctrl_items)
+		$ctrls[$i][$__CtrlBuild_INDEX_CTRL_IDS] = _
+				__CtrlTile($ctrl_items, $ctrl, _
 				$ctrl_x, $y, $ctrl_width, $ctrl_count_max, $ctrl_height)
 		$y += $ctrl_height
 	Next
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
-
-	___CtrlBuildSetOnEvent($items)
 EndFunc   ;==>__CtrlGroupBuild
 
 ; __CtrlGroupBuild()で生成したコントロールの高さを取得する.
-Func __CtrlGroupBuildHeight(ByRef Const $items)
+Func __CtrlGroupBuildHeight(ByRef Const $ctrls)
 	Local $height = 0
-	For $i = 0 To UBound($items) - 1
-		Local $ctrl_texts = $items[$i][$__CtrlBuild_INDEX_CTRL_TEXTS]
-		Local $ctrl_height = $items[$i][$__CtrlBuild_INDEX_CTRL_HEIGHT]
-		Local $ctrl_count_max = UBound($ctrl_texts)
-		$height += __CtrlTileHeight($ctrl_texts, $ctrl_count_max, $ctrl_height)
+	For $i = 0 To UBound($ctrls) - 1
+		Local $ctrl_items = $ctrls[$i][$__CtrlBuild_INDEX_CTRL_ITEMS]
+		Local $ctrl_height = $ctrls[$i][$__CtrlBuild_INDEX_CTRL_HEIGHT]
+		Local $ctrl_count_max = UBound($ctrl_items)
+		$height += __CtrlTileHeight($ctrl_items, $ctrl_count_max, $ctrl_height)
 	Next
 	Return $height + $__CtrlGroupTopMargin + $__CtrlGroupButtomMargin
 EndFunc   ;==>__CtrlGroupBuildHeight
 
 ; チェックされたハンドル配列を取得する.
-Func __CtrlChecked(Const $ctrlIDs)
+Func __CtrlChecked(Const $ids)
 	Local $checked[0]
-	If IsArray($ctrlIDs) Then
-		For $id In $ctrlIDs
+	If IsArray($ids) Then
+		For $id In $ids
 			If BitAND(GUICtrlRead($id), $GUI_CHECKED) Then
 				_ArrayAdd($checked, $id)
 			EndIf
@@ -196,28 +199,14 @@ EndFunc   ;==>__CtrlChecked
 ;===============================================================================
 ; 内部関数定義
 ;===============================================================================
-; イベントを登録する.
-Func ___CtrlBuildSetOnEvent(ByRef Const $items)
-	For $i = 0 To UBound($items) - 1
-		Local $handles = $items[$i][$__CtrlBuild_INDEX_CTRL_HANDLES]
-		Local $events = $items[$i][$__CtrlBuild_INDEX_CTRL_EVENTS]
-		If IsArray($events) Then
-			For $j = 0 To UBound($handles) - 1
-				If IsString($events[$j]) Then
-					__d($__CtrlDebug, "___CtrlBuildSetOnEvent() " & $handles[$j] & ":" & $events[$j])
-					GUICtrlSetOnEvent($handles[$j], $events[$j])
-				EndIf
-			Next
-		EndIf
-	Next
-EndFunc   ;==>___CtrlBuildSetOnEvent
+
 
 ;===============================================================================
 ; テスト
 ;===============================================================================
-Func ___CtrlTestButtonEvent()
-	ConsoleWrite("___CtrlTestButtonEvent()" & @CRLF)
-EndFunc   ;==>___CtrlTestButtonEvent
+Func ___CtrlTestEvent()
+	ConsoleWrite("___CtrlTestEvent()" & @CRLF)
+EndFunc   ;==>___CtrlTestEvent
 
 Func ___CtrlTestOnExit()
 	Exit
@@ -225,7 +214,9 @@ EndFunc   ;==>___CtrlTestOnExit
 
 Func ___CtrlTest()
 	GUICreate("Ctrl.au3 Test", 500, 500)
-	Local $texts[6] = ["aaa", "bbb", "ccc", "ddd", "", "eee"]
+	Local $items[6][$__Ctrl_ITEM_INDEX_MAX] = [ _
+			["aaa", "___CtrlTestEvent"], ["bbb", "___CtrlTestEvent"], ["ccc", "___CtrlTestEvent"], _
+			["ddd", "___CtrlTestEvent"], ["", 0], ["eee", "___CtrlTestEvent"]]
 	Local $start_x = 5
 	Local $start_y = 5
 	Local $width = 490
@@ -234,15 +225,15 @@ Func ___CtrlTest()
 	Local $margin = 5
 
 	; コントロールを敷き詰める
-	Global $___CtrlTest_ids = __CtrlTile($texts, "GUICtrlCreateCheckbox", _
+	Global $___CtrlTest_ids = __CtrlTile($items, "GUICtrlCreateCheckbox", _
 			$start_x, $start_y, $width, $col_max, $ctrl_height)
 	GUICtrlSetState($___CtrlTest_ids[0], $GUI_CHECKED)
 	GUICtrlSetState($___CtrlTest_ids[1], $GUI_CHECKED)
 
 	; グループコントロール内にコントロールを敷き詰める
-	Local $group_start_y = $start_y + __CtrlTileHeight($texts, _
+	Local $group_start_y = $start_y + __CtrlTileHeight($items, _
 			$col_max, $ctrl_height) + $margin
-	__CtrlGroupTile("グループ1", $texts, "GUICtrlCreateButton", _
+	__CtrlGroupTile("グループ1", $items, "GUICtrlCreateButton", _
 			$start_x, $group_start_y, $width, $col_max, $ctrl_height)
 
 	; グループコントロールを２つ並べる
@@ -250,29 +241,30 @@ Func ___CtrlTest()
 	Local $col_width = __CtrlWidth(2, $width, $space)
 	Local $group1_start_x = __CtrlCol(1, 2, $start_x, $width, $space)
 	Local $group2_start_x = __CtrlCol(2, 2, $start_x, $width, $space)
-	Local $group1_start_y = $group_start_y + __CtrlGroupTileHeight($texts, _
+	Local $group1_start_y = $group_start_y + __CtrlGroupTileHeight($items, _
 			$col_max, $ctrl_height) + $margin
-	__CtrlGroupTile("グループ 1-2", $texts, "GUICtrlCreateButton", _
+	__CtrlGroupTile("グループ 1-2", $items, "GUICtrlCreateButton", _
 			$group1_start_x, $group1_start_y, $col_width, $col_max, $ctrl_height)
-	__CtrlGroupTile("グループ 2-2", $texts, "GUICtrlCreateButton", _
+	__CtrlGroupTile("グループ 2-2", $items, "GUICtrlCreateButton", _
 			$group2_start_x, $group1_start_y, $col_width, $col_max, $ctrl_height)
-	Local $group_height = __CtrlGroupTileHeight($texts, $col_max, $ctrl_height)
+	Local $group_height = __CtrlGroupTileHeight($items, $col_max, $ctrl_height)
 
 	; コントロールを構成する
 	Local $build_y = $group1_start_y + $group_height + $margin
-	Local $check_texts[3] = ["check1", "check2", "check3"]
-	Local $button_texts[2] = ["button1", "button2"]
-	Local $button_events[2] = ["___CtrlTestButtonEvent", "___CtrlTestButtonEvent"]
-	Local $items[2][$__CtrlBuild_INDEX_MAX] = [ _
-			["GUICtrlCreateCheckbox", $check_texts, 0, $ctrl_height, 0], _
-			["GUICtrlCreateButton", $button_texts, $button_events, $ctrl_height, 0] _
+	Local $check_items[3][$__Ctrl_ITEM_INDEX_MAX] = _
+			[["check1", 0], ["check2", 0], ["check3", 0]]
+	Local $button_items[2][$__Ctrl_ITEM_INDEX_MAX] = [ _
+			["button1", "___CtrlTestEvent"], ["button2", "___CtrlTestEvent"]]
+	Local $ctrls[2][$__CtrlBuild_INDEX_MAX] = [ _
+			["GUICtrlCreateCheckbox", $check_items, $ctrl_height, 0], _
+			["GUICtrlCreateButton", $button_items, $ctrl_height, 0] _
 			]
-	__CtrlBuild($items, $start_x, $build_y, $width)
-	Local $build_height = __CtrlBuildHeight($items)
+	__CtrlBuild($ctrls, $start_x, $build_y, $width)
+	Local $build_height = __CtrlBuildHeight($ctrls)
 
 	; コントロールグループを構成する
 	Local $build_group_y = $build_y + $build_height + $margin
-	__CtrlGroupBuild("グループビルド", $items, $start_x, $build_group_y, $width)
+	__CtrlGroupBuild("グループビルド", $ctrls, $start_x, $build_group_y, $width)
 
 	_Assert('2 = UBound(__CtrlChecked($___CtrlTest_ids))')
 
