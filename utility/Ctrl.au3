@@ -26,7 +26,7 @@ Global Const $__CtrlBuild_INDEX_MAX = 4
 Global $__CtrlDebug = False
 
 ; グループコントロールのマージン
-Global $__CtrlGroupTopMargin = 15
+Global $__CtrlGroupTopMargin = 18
 Global $__CtrlGroupButtomMargin = 8
 Global $__CtrlGroupSideMargin = 5
 
