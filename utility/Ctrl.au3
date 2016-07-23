@@ -71,7 +71,7 @@ Func __CtrlTile(ByRef Const $items, Const $ctrl, Const $x, Const $y, _
 	For $i = 0 To $count - 1
 		Local $text = $items[$i][$__Ctrl_ITEM_INDEX_TEXT]
 		Local $event = $items[$i][$__Ctrl_ITEM_INDEX_EVENT]
-		If "" <> $text Then
+		If IsString($text) Then
 			Local $ctrl_x = __CtrlCol($index, $col_max, $x, $width)
 			Local $ctrl_width = __CtrlWidth($col_max, $width)
 			Local $id = Call($ctrl, _
@@ -216,7 +216,7 @@ Func ___CtrlTest()
 	GUICreate("Ctrl.au3 Test", 500, 500)
 	Local $items[6][$__Ctrl_ITEM_INDEX_MAX] = [ _
 			["aaa", "___CtrlTestEvent"], ["bbb", "___CtrlTestEvent"], ["ccc", "___CtrlTestEvent"], _
-			["ddd", "___CtrlTestEvent"], ["", 0], ["eee", "___CtrlTestEvent"]]
+			["ddd", "___CtrlTestEvent"], [0, 0], ["eee", "___CtrlTestEvent"]]
 	Local $start_x = 5
 	Local $start_y = 5
 	Local $width = 490
