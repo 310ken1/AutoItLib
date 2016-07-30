@@ -79,7 +79,7 @@ Func __CtrlBuilder(ByRef $items, Const $x, Const $y, Const $width, Const $space 
 		If ___CtrlIsColDelimiter($items, $i) Then
 			$index = 0
 			$count = ___CtrlColMaxCount($items, $i + 1)
-			$ctrl_y += __CtrlBuilderColHeight($items, $i)
+			$ctrl_y += __CtrlBuilderColHeight($items, $i) + $height
 		EndIf
 		If "" <> $ctrl Then
 			Local $ctrl_height = $height
@@ -118,6 +118,7 @@ Func __CtrlBuilderHeight(ByRef Const $items, Const $start = 0, Const $end = UBou
 	Local $col_height = 0
 	For $i = $start To $end
 		Local $childe = $items[$i][$__CtrlBuilder_INDEX_CHILDE]
+		Local $height = $items[$i][$__CtrlBuilder_INDEX_HEIGHT]
 		If IsArray($childe) Then
 			Local $h = __CtrlBuilderHeight($childe)
 			$h += $__CtrlGroupTopMargin + $__CtrlGroupButtomMargin
@@ -125,11 +126,14 @@ Func __CtrlBuilderHeight(ByRef Const $items, Const $start = 0, Const $end = UBou
 				$childe_height = $h
 			EndIf
 		EndIf
-		If $col_height < $items[$i][$__CtrlBuilder_INDEX_HEIGHT] Then
-			$col_height = $items[$i][$__CtrlBuilder_INDEX_HEIGHT]
+		If $col_height < $height Then
+			$col_height = $height
 		EndIf
 		If ___CtrlIsColDelimiter($items, $i) Or ($i = $end) Then
 			__d($__CtrlDebug, "__CtrlBuilderHeight() col=" & $col_height & " childe=" & $childe_height)
+			If ___CtrlIsColDelimiter($items, $i) Then
+				$ctrl_height += $height
+			EndIf
 			If $col_height < $childe_height Then
 				$ctrl_height += $childe_height
 			Else
@@ -184,6 +188,9 @@ Func ___CtrlIsColDelimiter(ByRef Const $items, Const $index)
 	Local $result = True
 	Local $count = $__CtrlBuilder_INDEX_END - 1
 	For $i = 0 To $count
+		If $i = $__CtrlBuilder_INDEX_HEIGHT Then
+			ContinueLoop
+		EndIf
 		If IsString($items[$index][$i]) Or $__CtrlBuilder_COL_DELIMITER[$i] <> $items[$index][$i] Then
 			$result = False
 			ExitLoop
@@ -263,11 +270,11 @@ Func ___CtrlTest()
 			]
 	Local $composite2_items[7][$__CtrlBuilder_INDEX_END] = [ _
 			["GUICtrlCreateButton", "ボタン", $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			[0, 0, 0, 0, 0, 0, 0], _
+			[0, 0, 2, 0, 0, 0, 0], _
 			["GUICtrlCreateButton", "ボタン", $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			[0, 0, 0, 0, 0, 0, 0], _
+			[0, 0, 4, 0, 0, 0, 0], _
 			["GUICtrlCreateButton", "ボタン", $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			[0, 0, 0, 0, 0, 0, 0], _
+			[0, 0, 8, 0, 0, 0, 0], _
 			["GUICtrlCreateButton", "ボタン", $ctrl_height, 0, "___CtrlTestEvent", 0, 0] _
 			]
 	Local $composites_items[2][$__CtrlBuilder_INDEX_END] = [ _
