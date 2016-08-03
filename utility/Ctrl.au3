@@ -79,7 +79,7 @@ Func __CtrlBuilder(ByRef $items, Const $x, Const $y, Const $width, Const $space 
 		If ___CtrlIsColDelimiter($items, $i) Then
 			$index = 0
 			$count = ___CtrlColMaxCount($items, $i + 1)
-			$ctrl_y += __CtrlBuilderColHeight($items, $i) + $height
+			$ctrl_y += __CtrlBuilderColHeight($items, $i - 1) + $height
 		EndIf
 		If "" <> $ctrl Then
 			Local $ctrl_height = $height
@@ -156,7 +156,7 @@ Func __CtrlBuilderColHeight(ByRef Const $items, Const $index)
 	Local $end = UBound($items) - 1
 	For $i = $index To 0 Step -1
 		If ___CtrlIsColDelimiter($items, $i) Then
-			$start = $i - 1
+			$start = $i + 1
 			ExitLoop
 		EndIf
 	Next
