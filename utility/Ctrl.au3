@@ -102,7 +102,7 @@ Func __CtrlBuilder(ByRef $items, Const $x, Const $y, Const $width, Const $space 
 				$group_y += $__CtrlGroupTopMargin
 				$gorup_width -= ($__CtrlGroupSideMargin * 2)
 			EndIf
-			__CtrlBuilder($childe, $group_x, $group_y, $gorup_width)
+			__CtrlBuilder($items[$i][$__CtrlBuilder_INDEX_CHILDE], $group_x, $group_y, $gorup_width)
 		EndIf
 		If $group Then
 			GUICtrlCreateGroup("", -99, -99, 1, 1)
@@ -282,6 +282,11 @@ Func ___CtrlTest()
 			["", "", 0, 0, 0, $composite2_items, 0] _
 			]
 	__CtrlBuilder($composites_items, $start_x, $composite_y, $width, $space)
+
+	$__DebugGlobal = $composites_items[0][$__CtrlBuilder_INDEX_ID]
+	_Assert('0 < $__DebugGlobal')
+	$__DebugGlobal = ($composites_items[0][$__CtrlBuilder_INDEX_CHILDE])[0][$__CtrlBuilder_INDEX_ID]
+	_Assert('0 < $__DebugGlobal')
 
 	GUISetOnEvent($GUI_EVENT_CLOSE, "___CtrlTestOnExit")
 	GUISetState(@SW_SHOW)
