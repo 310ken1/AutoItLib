@@ -103,7 +103,8 @@ Func __CtrlBuilder(ByRef $items, Const $x, Const $y, Const $width, Const $space 
 						 + $__CtrlGroupTopMargin + $__CtrlGroupButtomMargin
 			EndIf
 			Local $id = Call($ctrl, _
-					$text, $ctrl_x, $ctrl_y, $ctrl_width, $ctrl_height)
+					"", $ctrl_x, $ctrl_y, $ctrl_width, $ctrl_height)
+			GUICtrlSetData($id, $text)
 			GUICtrlSetState($id, $state)
 			GUICtrlSetOnEvent($id, $event)
 			$items[$i][$__CtrlBuilder_INDEX_ID] = $id
@@ -320,7 +321,7 @@ Func ___CtrlTest()
 	; グループコントロールとコントロールを並べる
 	Local $composite_y = $groups_start_y + $groups_height + $margin
 	Local $composite1_items[7][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateCombo", "テスト1", "___CtrlTestEvent"], _
+			["GUICtrlCreateCombo", "テスト1|テスト2|テスト3", "___CtrlTestEvent"], _
 			[-1], _
 			["GUICtrlCreateCheckbox", "チェック1", "___CtrlTestEvent"], _
 			["GUICtrlCreateCheckbox", "チェック2", "___CtrlTestEvent"], _
