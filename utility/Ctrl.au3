@@ -10,15 +10,13 @@ Opt("GUIOnEventMode", 1)
 ;===============================================================================
 Global Const $__CtrlBuilder_INDEX_CTRL = 0
 Global Const $__CtrlBuilder_INDEX_TEXT = 1
-Global Const $__CtrlBuilder_INDEX_WEIGHT = 2
-Global Const $__CtrlBuilder_INDEX_HEIGHT = 3
-Global Const $__CtrlBuilder_INDEX_STATE = 4
-Global Const $__CtrlBuilder_INDEX_EVENT = 5
-Global Const $__CtrlBuilder_INDEX_CHILDE = 6
+Global Const $__CtrlBuilder_INDEX_EVENT = 2
+Global Const $__CtrlBuilder_INDEX_STATE = 3
+Global Const $__CtrlBuilder_INDEX_CHILDE = 4
+Global Const $__CtrlBuilder_INDEX_WEIGHT = 5
+Global Const $__CtrlBuilder_INDEX_HEIGHT = 6
 Global Const $__CtrlBuilder_INDEX_ID = 7
 Global Const $__CtrlBuilder_INDEX_END = 8
-
-Global Const $__CtrlBuilder_COL_DELIMITER[$__CtrlBuilder_INDEX_END] = [0, 0, 0, 0, 0, 0, 0, 0]
 
 Local Const $___CtrlBuilder_INDEX_RANGE_START = 0
 Local Const $___CtrlBuilder_INDEX_RANGE_END = 1
@@ -29,6 +27,15 @@ Local Const $___CtrlBuilder_INDEX_RANGE_MAX = 2
 ;===============================================================================
 ; デバッグフラグ.
 Global $__CtrlDebug = False
+
+; コントロールの高さのデフォルト値
+Global $__CtrlHeight = 30
+
+; 区切りの高さのデフォルト値
+Global $__CtrlDelimiterHeight = 0
+
+; コントロールの重みのデフォルト値
+Global $__CtrlWeight = 1
 
 ; グループコントロールのマージン
 Global $__CtrlGroupTopMargin = 18
@@ -76,8 +83,8 @@ Func __CtrlBuilder(ByRef $items, Const $x, Const $y, Const $width, Const $space 
 		$index += 1
 		Local $ctrl = $items[$i][$__CtrlBuilder_INDEX_CTRL]
 		Local $text = $items[$i][$__CtrlBuilder_INDEX_TEXT]
-		Local $weight = $items[$i][$__CtrlBuilder_INDEX_WEIGHT]
-		Local $height = $items[$i][$__CtrlBuilder_INDEX_HEIGHT]
+		Local $weight = ___CtrlItemWeight($items, $i)
+		Local $height = ___CtrlItemHeight($items, $i)
 		Local $state = $items[$i][$__CtrlBuilder_INDEX_STATE]
 		Local $event = $items[$i][$__CtrlBuilder_INDEX_EVENT]
 		Local $childe = $items[$i][$__CtrlBuilder_INDEX_CHILDE]
@@ -129,7 +136,7 @@ Func __CtrlBuilderHeight(ByRef Const $items, Const $start = 0, Const $end = UBou
 	Local $col_height = 0
 	For $i = $start To $end
 		Local $childe = $items[$i][$__CtrlBuilder_INDEX_CHILDE]
-		Local $height = $items[$i][$__CtrlBuilder_INDEX_HEIGHT]
+		Local $height = ___CtrlItemHeight($items, $i)
 		If IsArray($childe) Then
 			Local $h = __CtrlBuilderHeight($childe)
 			$h += $__CtrlGroupTopMargin + $__CtrlGroupButtomMargin
@@ -161,6 +168,32 @@ EndFunc   ;==>__CtrlBuilderHeight
 ;===============================================================================
 ; 内部関数定義
 ;===============================================================================
+; アイテムの高さを取得する
+Func ___CtrlItemHeight(ByRef Const $items, Const $index)
+	Local $height = 0
+	If ___CtrlIsColDelimiter($items, $index) Then
+		$height = $__CtrlDelimiterHeight
+	Else
+		$height = $__CtrlHeight
+	EndIf
+	If "" <> $items[$index][$__CtrlBuilder_INDEX_HEIGHT] Then
+		$height = $items[$index][$__CtrlBuilder_INDEX_HEIGHT]
+	EndIf
+	Return $height
+EndFunc   ;==>___CtrlItemHeight
+
+; アイテムの重みを取得する
+Func ___CtrlItemWeight(ByRef Const $items, Const $index)
+	Local $weight = 0
+	If Not ___CtrlIsColDelimiter($items, $index) Then
+		$weight = $__CtrlWeight
+		If "" <> $items[$index][$__CtrlBuilder_INDEX_WEIGHT] Then
+			$weight = $items[$index][$__CtrlBuilder_INDEX_WEIGHT]
+		EndIf
+	EndIf
+	Return $weight
+EndFunc   ;==>___CtrlItemWeight
+
 ; インデックスが属する行の開始インデックスと終了インデックスを取得する
 Func ___CtrlIndexRange(ByRef Const $items, Const $index)
 	Local $range[$___CtrlBuilder_INDEX_RANGE_MAX] = [0, UBound($items) - 1]
@@ -209,7 +242,7 @@ Func ___CtrlColWeightMax(ByRef Const $items, Const $index)
 		If ___CtrlIsColDelimiter($items, $i) Then
 			ExitLoop
 		EndIf
-		$weight += $items[$i][$__CtrlBuilder_INDEX_WEIGHT]
+		$weight += ___CtrlItemWeight($items, $i)
 	Next
 	__d($__CtrlDebug, "___CtrlColMaxRatio(index=" & $index & ") Return=" & $weight)
 	Return $weight
@@ -217,25 +250,15 @@ EndFunc   ;==>___CtrlColWeightMax
 
 ; コントロールの行区切りか取得する
 Func ___CtrlIsColDelimiter(ByRef Const $items, Const $index)
-	Local $result = True
-	Local $count = $__CtrlBuilder_INDEX_END - 1
-	For $i = 0 To $count
-		If $i = $__CtrlBuilder_INDEX_HEIGHT Then
-			ContinueLoop
-		EndIf
-		If IsString($items[$index][$i]) Or $__CtrlBuilder_COL_DELIMITER[$i] <> $items[$index][$i] Then
-			$result = False
-			ExitLoop
-		EndIf
-	Next
-	Return $result
+	Return IsNumber($items[$index][$__CtrlBuilder_INDEX_CTRL]) And _
+			$items[$index][$__CtrlBuilder_INDEX_CTRL] < 0
 EndFunc   ;==>___CtrlIsColDelimiter
 
 ;===============================================================================
 ; テスト
 ;===============================================================================
 Func ___CtrlTestEvent()
-	ConsoleWrite("___CtrlTestEvent()" & @CRLF)
+	ConsoleWrite("___CtrlTestEvent() id=" & @GUI_CtrlId & @CRLF)
 EndFunc   ;==>___CtrlTestEvent
 
 Func ___CtrlTestOnExit()
@@ -254,13 +277,13 @@ Func ___CtrlTest()
 
 	; チェックボックスを並べる
 	Local $check_items[7][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateCheckbox", "aaa", 1, $ctrl_height, $GUI_CHECKED, "___CtrlTestEvent", 0, 0], _
-			["GUICtrlCreateCheckbox", "bbb", 1, $ctrl_height, $GUI_CHECKED, "___CtrlTestEvent", 0, 0], _
-			["GUICtrlCreateCheckbox", "ccc", 1, $ctrl_height, $GUI_UNCHECKED, "___CtrlTestEvent", 0, 0], _
-			[0, 0, 0, 0, 0, 0, 0, 0], _
-			["GUICtrlCreateCheckbox", "bbb", 1, $ctrl_height, $GUI_UNCHECKED, "___CtrlTestEvent", 0, 0], _
-			["", 0, 1, 0, 0, 0, 0, 0], _
-			["GUICtrlCreateCheckbox", "eee", 1, $ctrl_height, $GUI_UNCHECKED, "___CtrlTestEvent", 0, 0] _
+			["GUICtrlCreateCheckbox", "aaa", "___CtrlTestEvent", $GUI_CHECKED], _
+			["GUICtrlCreateCheckbox", "bbb", "___CtrlTestEvent", $GUI_CHECKED], _
+			["GUICtrlCreateCheckbox", "ccc", "___CtrlTestEvent", $GUI_UNCHECKED], _
+			[-1], _
+			["GUICtrlCreateCheckbox", "bbb", "___CtrlTestEvent", $GUI_UNCHECKED], _
+			[], _
+			["GUICtrlCreateCheckbox", "eee", "___CtrlTestEvent", $GUI_UNCHECKED] _
 			]
 	__CtrlBuilder($check_items, $start_x, $start_y, $width)
 	Local $check_height = __CtrlBuilderHeight($check_items)
@@ -268,28 +291,28 @@ Func ___CtrlTest()
 	; グループコントロール内にボタンを並べる
 	Local $group_start_y = $start_y + $check_height + $margin
 	Local $group1_items[5][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateButton", "aaa", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			["GUICtrlCreateButton", "bbb", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			["GUICtrlCreateButton", "ccc", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			[0, 0, 0, 0, 0, 0, 0, 0], _
-			["GUICtrlCreateButton", "ddd", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0] _
+			["GUICtrlCreateButton", "aaa", "___CtrlTestEvent"], _
+			["GUICtrlCreateButton", "bbb", "___CtrlTestEvent"], _
+			["GUICtrlCreateButton", "ccc", "___CtrlTestEvent"], _
+			[-1], _
+			["GUICtrlCreateButton", "ddd", "___CtrlTestEvent"] _
 			]
 	Local $group_group[1][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateGroup", "グループ1", 1, 0, 0, 0, $group1_items, 0]]
+			["GUICtrlCreateGroup", "グループ1", 0, 0, $group1_items]]
 	__CtrlBuilder($group_group, $start_x, $group_start_y, $width)
 	Local $group_height = __CtrlBuilderHeight($group_group)
 
 	; グループコントロールを２つ並べる
 	Local $group2_items[4][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateButton", "aaa", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			["GUICtrlCreateButton", "bbb", 2, $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			[0, 0, 0, 0, 0, 0, 0, 0], _
-			["GUICtrlCreateButton", "ddd", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0] _
+			["GUICtrlCreateButton", "aaa", "___CtrlTestEvent", 0, 0, 1, 45], _
+			["GUICtrlCreateButton", "bbb", "___CtrlTestEvent", 0, 0, 2], _
+			[-1], _
+			["GUICtrlCreateButton", "ddd", "___CtrlTestEvent", 0, 0, 1] _
 			]
 	Local $groups_start_y = $group_start_y + $group_height + $margin
 	Local $groups_group[2][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateGroup", "グループ", 1, 0, 0, 0, $group1_items, 0], _
-			["GUICtrlCreateGroup", "", 1, 0, 0, 0, $group2_items, 0] _
+			["GUICtrlCreateGroup", "グループ", 0, 0, $group1_items], _
+			["GUICtrlCreateGroup", "", 0, 0, $group2_items] _
 			]
 	__CtrlBuilder($groups_group, $start_x, $groups_start_y, $width, $space)
 	Local $groups_height = __CtrlBuilderHeight($groups_group)
@@ -297,26 +320,26 @@ Func ___CtrlTest()
 	; グループコントロールとコントロールを並べる
 	Local $composite_y = $groups_start_y + $groups_height + $margin
 	Local $composite1_items[7][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateCombo", "テスト1", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			[0, 0, 0, 0, 0, 0, 0, 0], _
-			["GUICtrlCreateCheckbox", "チェック1", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			["GUICtrlCreateCheckbox", "チェック2", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			["GUICtrlCreateCheckbox", "チェック3", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			[0, 0, 0, 0, 0, 0, 0, 0], _
-			["GUICtrlCreateButton", "ボタン", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0] _
+			["GUICtrlCreateCombo", "テスト1", "___CtrlTestEvent"], _
+			[-1], _
+			["GUICtrlCreateCheckbox", "チェック1", "___CtrlTestEvent"], _
+			["GUICtrlCreateCheckbox", "チェック2", "___CtrlTestEvent"], _
+			["GUICtrlCreateCheckbox", "チェック3", "___CtrlTestEvent"], _
+			[-1], _
+			["GUICtrlCreateButton", "ボタン", "___CtrlTestEvent"] _
 			]
 	Local $composite2_items[7][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateButton", "ボタン", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			[0, 0, 0, 2, 0, 0, 0, 0], _
-			["GUICtrlCreateButton", "ボタン", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			[0, 0, 0, 4, 0, 0, 0, 0], _
-			["GUICtrlCreateButton", "ボタン", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0], _
-			[0, 0, 0, 8, 0, 0, 0, 0], _
-			["GUICtrlCreateButton", "ボタン", 1, $ctrl_height, 0, "___CtrlTestEvent", 0, 0] _
+			["GUICtrlCreateButton", "ボタン", "___CtrlTestEvent"], _
+			[-1, 0, 0, 0, 0, 0, 2], _
+			["GUICtrlCreateButton", "ボタン", "___CtrlTestEvent"], _
+			[-1, 0, 0, 0, 0, 0, 4], _
+			["GUICtrlCreateButton", "ボタン", "___CtrlTestEvent"], _
+			[-1, 0, 0, 0, 0, 0, 8], _
+			["GUICtrlCreateButton", "ボタン", "___CtrlTestEvent"] _
 			]
 	Local $composites_items[2][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateGroup", "グループ", 1, 0, 0, 0, $composite1_items, 0], _
-			["", "", 1, 0, 0, 0, $composite2_items, 0] _
+			["GUICtrlCreateGroup", "グループ", 0, 0, $composite1_items], _
+			["", "", 0, 0, $composite2_items] _
 			]
 	__CtrlBuilder($composites_items, $start_x, $composite_y, $width, $space)
 
