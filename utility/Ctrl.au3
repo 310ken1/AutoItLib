@@ -11,16 +11,25 @@ Opt("GUIOnEventMode", 1)
 Global Const $__CtrlBuilder_INDEX_CTRL = 0
 Global Const $__CtrlBuilder_INDEX_TEXT = 1
 Global Const $__CtrlBuilder_INDEX_EVENT = 2
-Global Const $__CtrlBuilder_INDEX_STATE = 3
+Global Const $__CtrlBuilder_INDEX_KEY = 3
 Global Const $__CtrlBuilder_INDEX_CHILDE = 4
-Global Const $__CtrlBuilder_INDEX_WEIGHT = 5
-Global Const $__CtrlBuilder_INDEX_HEIGHT = 6
-Global Const $__CtrlBuilder_INDEX_ID = 7
-Global Const $__CtrlBuilder_INDEX_END = 8
+Global Const $__CtrlBuilder_INDEX_STATE = 5
+Global Const $__CtrlBuilder_INDEX_WEIGHT = 6
+Global Const $__CtrlBuilder_INDEX_HEIGHT = 7
+Global Const $__CtrlBuilder_INDEX_ID = 8
+Global Const $__CtrlBuilder_INDEX_END = 9
 
 Local Const $___CtrlBuilder_INDEX_RANGE_START = 0
 Local Const $___CtrlBuilder_INDEX_RANGE_END = 1
 Local Const $___CtrlBuilder_INDEX_RANGE_MAX = 2
+
+; Save/Restore対象のインデックス
+Local Const $__CtrlSave_INDEX_ID = 0
+Local Const $__CtrlSave_INDEX_CTRL = 1
+Local Const $__CtrlSave_INDEX_FILE = 2
+Local Const $__CtrlSave_INDEX_SECTION = 3
+Local Const $__CtrlSave_INDEX_KEY = 4
+Local Const $__CtrlSave_INDEX_MAX = 5
 
 ;===============================================================================
 ; 変数定義
@@ -41,6 +50,13 @@ Global $__CtrlWeight = 1
 Global $__CtrlGroupTopMargin = 18
 Global $__CtrlGroupButtomMargin = 8
 Global $__CtrlGroupSideMargin = 5
+
+; 設定値保存用のiniファイル名
+Global $__CtrlIniFile = @ScriptDir & "\" & @ScriptName & ".ini"
+Global $__CtriIniSection = "CtrlBuilder"
+
+; Save/Restore対象
+Local $__CtrlSaveItem[0]
 
 ;===============================================================================
 ; 関数定義
@@ -86,6 +102,7 @@ Func __CtrlBuilder(ByRef $items, Const $x, Const $y, Const $width, Const $space 
 		Local $weight = ___CtrlItemWeight($items, $i)
 		Local $height = ___CtrlItemHeight($items, $i)
 		Local $state = $items[$i][$__CtrlBuilder_INDEX_STATE]
+		Local $key = $items[$i][$__CtrlBuilder_INDEX_KEY]
 		Local $event = $items[$i][$__CtrlBuilder_INDEX_EVENT]
 		Local $childe = $items[$i][$__CtrlBuilder_INDEX_CHILDE]
 		Local $ctrl_width = $width / $weight_max * $weight - (($space * ($ctrl_count - 1)) / $ctrl_count)
@@ -108,6 +125,9 @@ Func __CtrlBuilder(ByRef $items, Const $x, Const $y, Const $width, Const $space 
 			GUICtrlSetState($id, $state)
 			GUICtrlSetOnEvent($id, $event)
 			$items[$i][$__CtrlBuilder_INDEX_ID] = $id
+			If IsString($key) And "" <> $key Then
+				__CtrlAddSaveItem($id, $ctrl, $__CtrlIniFile, $__CtriIniSection, $key)
+			EndIf
 		EndIf
 		If IsArray($childe) Then
 			Local $group_x = $ctrl_x
@@ -165,6 +185,70 @@ Func __CtrlBuilderHeight(ByRef Const $items, Const $start = 0, Const $end = UBou
 	__d($__CtrlDebug, "__CtrlBuilderHeight() Return=" & $ctrl_height)
 	Return $ctrl_height
 EndFunc   ;==>__CtrlBuilderHeight
+
+; Save/Restore対象を登録する
+Func __CtrlAddSaveItem(Const $id, Const $ctrl, Const $file, Const $section, Const $key)
+	Local $end = UBound($__CtrlSaveItem)
+	_ArrayAdd($__CtrlSaveItem, 0)
+	Local $item[$__CtrlSave_INDEX_MAX]
+	$item[$__CtrlSave_INDEX_ID] = $id
+	$item[$__CtrlSave_INDEX_CTRL] = $ctrl
+	$item[$__CtrlSave_INDEX_FILE] = $file
+	$item[$__CtrlSave_INDEX_SECTION] = $section
+	$item[$__CtrlSave_INDEX_KEY] = $key
+	$__CtrlSaveItem[$end] = $item
+
+	If 1 = UBound($__CtrlSaveItem) Then
+		OnAutoItExitRegister("__CtrlSave")
+	EndIf
+EndFunc   ;==>__CtrlAddSaveItem
+
+; Save/Restore対象を削除する
+Func __CtrlRemoveSaveItem(Const $id, Const $ctrl)
+	For $i = UBound($__CtrlSaveItem) - 1 To 0 Step -1
+		If ($id = ($__CtrlSaveItem[$i])[$__CtrlSave_INDEX_ID]) And _
+				($ctrl = ($__CtrlSaveItem[$i])[$__CtrlSave_INDEX_CTRL]) Then
+			_ArrayDelete($__CtrlSaveItem, $i)
+		EndIf
+	Next
+
+	If 0 = UBound($__CtrlSaveItem) Then
+		OnAutoItExitUnRegister("__CtrlSave")
+	EndIf
+EndFunc   ;==>__CtrlRemoveSaveItem
+
+; Save/Restore対象の設定値をSaveする
+Func __CtrlSave()
+	For $i = 0 To UBound($__CtrlSaveItem) - 1
+		Local $id = ($__CtrlSaveItem[$i])[$__CtrlSave_INDEX_ID]
+		Local $file = ($__CtrlSaveItem[$i])[$__CtrlSave_INDEX_FILE]
+		Local $section = ($__CtrlSaveItem[$i])[$__CtrlSave_INDEX_SECTION]
+		Local $key = ($__CtrlSaveItem[$i])[$__CtrlSave_INDEX_KEY]
+		IniWrite($file, $section, $key, GUICtrlRead($id))
+	Next
+EndFunc   ;==>__CtrlSave
+
+; Save/Restore対象の設定値をRestoreする
+Func __CtrlRestore()
+	For $i = 0 To UBound($__CtrlSaveItem) - 1
+		Local $id = ($__CtrlSaveItem[$i])[$__CtrlSave_INDEX_ID]
+		Local $ctrl = ($__CtrlSaveItem[$i])[$__CtrlSave_INDEX_CTRL]
+		Local $file = ($__CtrlSaveItem[$i])[$__CtrlSave_INDEX_FILE]
+		Local $section = ($__CtrlSaveItem[$i])[$__CtrlSave_INDEX_SECTION]
+		Local $key = ($__CtrlSaveItem[$i])[$__CtrlSave_INDEX_KEY]
+		Local $value = IniRead($file, $section, $key, "")
+		If "" <> $value Then
+			Switch $ctrl
+				Case "GUICtrlCreateCheckbox"
+					GUICtrlSetState($id, $value)
+				Case "GUICtrlCreateRadio"
+					GUICtrlSetState($id, $value)
+				Case Else
+					GUICtrlSetData($id, $value)
+			EndSwitch
+		EndIf
+	Next
+EndFunc   ;==>__CtrlRestore
 
 ;===============================================================================
 ; 内部関数定義
@@ -278,13 +362,13 @@ Func ___CtrlTest()
 
 	; チェックボックスを並べる
 	Local $check_items[7][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateCheckbox", "aaa", "___CtrlTestEvent", $GUI_CHECKED], _
-			["GUICtrlCreateCheckbox", "bbb", "___CtrlTestEvent", $GUI_CHECKED], _
-			["GUICtrlCreateCheckbox", "ccc", "___CtrlTestEvent", $GUI_UNCHECKED], _
+			["GUICtrlCreateCheckbox", "aaa", "___CtrlTestEvent", "aaa", 0, $GUI_CHECKED], _
+			["GUICtrlCreateCheckbox", "bbb", "___CtrlTestEvent", "bbb", 0, $GUI_CHECKED], _
+			["GUICtrlCreateCheckbox", "ccc", "___CtrlTestEvent", "ccc", 0, $GUI_UNCHECKED], _
 			[-1], _
-			["GUICtrlCreateCheckbox", "bbb", "___CtrlTestEvent", $GUI_UNCHECKED], _
+			["GUICtrlCreateCheckbox", "ddd", "___CtrlTestEvent", "ddd", 0, $GUI_UNCHECKED], _
 			[], _
-			["GUICtrlCreateCheckbox", "eee", "___CtrlTestEvent", $GUI_UNCHECKED] _
+			["GUICtrlCreateCheckbox", "eee", "___CtrlTestEvent", "eee", 0, $GUI_UNCHECKED] _
 			]
 	__CtrlBuilder($check_items, $start_x, $start_y, $width)
 	Local $check_height = __CtrlBuilderHeight($check_items)
@@ -299,21 +383,21 @@ Func ___CtrlTest()
 			["GUICtrlCreateButton", "ddd", "___CtrlTestEvent"] _
 			]
 	Local $group_group[1][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateGroup", "グループ1", 0, 0, $group1_items]]
+			["GUICtrlCreateGroup", "グループ1", 0, "", $group1_items]]
 	__CtrlBuilder($group_group, $start_x, $group_start_y, $width)
 	Local $group_height = __CtrlBuilderHeight($group_group)
 
 	; グループコントロールを２つ並べる
 	Local $group2_items[4][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateButton", "aaa", "___CtrlTestEvent", 0, 0, 1, 45], _
-			["GUICtrlCreateButton", "bbb", "___CtrlTestEvent", 0, 0, 2], _
+			["GUICtrlCreateButton", "aaa", "___CtrlTestEvent", "", 0, 0, 1, 45], _
+			["GUICtrlCreateButton", "bbb", "___CtrlTestEvent", "", 0, 0, 2], _
 			[-1], _
-			["GUICtrlCreateButton", "ddd", "___CtrlTestEvent", 0, 0, 1] _
+			["GUICtrlCreateButton", "ddd", "___CtrlTestEvent", "", 0, 0, 1] _
 			]
 	Local $groups_start_y = $group_start_y + $group_height + $margin
 	Local $groups_group[2][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateGroup", "グループ", 0, 0, $group1_items], _
-			["GUICtrlCreateGroup", "", 0, 0, $group2_items] _
+			["GUICtrlCreateGroup", "グループ", 0, "", $group1_items], _
+			["GUICtrlCreateGroup", "", 0, "", $group2_items] _
 			]
 	__CtrlBuilder($groups_group, $start_x, $groups_start_y, $width, $space)
 	Local $groups_height = __CtrlBuilderHeight($groups_group)
@@ -331,18 +415,19 @@ Func ___CtrlTest()
 			]
 	Local $composite2_items[7][$__CtrlBuilder_INDEX_END] = [ _
 			["GUICtrlCreateButton", "ボタン", "___CtrlTestEvent"], _
-			[-1, 0, 0, 0, 0, 0, 2], _
+			[-1, 0, 0, 0, 0, 0, 0, 2], _
 			["GUICtrlCreateButton", "ボタン", "___CtrlTestEvent"], _
-			[-1, 0, 0, 0, 0, 0, 4], _
+			[-1, 0, 0, 0, 0, 0, 0, 4], _
 			["GUICtrlCreateButton", "ボタン", "___CtrlTestEvent"], _
-			[-1, 0, 0, 0, 0, 0, 8], _
+			[-1, 0, 0, 0, 0, 0, 0, 8], _
 			["GUICtrlCreateButton", "ボタン", "___CtrlTestEvent"] _
 			]
 	Local $composites_items[2][$__CtrlBuilder_INDEX_END] = [ _
-			["GUICtrlCreateGroup", "グループ", 0, 0, $composite1_items], _
-			["", "", 0, 0, $composite2_items] _
+			["GUICtrlCreateGroup", "グループ", 0, "", $composite1_items], _
+			["", "", 0, "", $composite2_items] _
 			]
 	__CtrlBuilder($composites_items, $start_x, $composite_y, $width, $space)
+	__CtrlRestore()
 
 	$__DebugGlobal = $composites_items[0][$__CtrlBuilder_INDEX_ID]
 	_Assert('0 < $__DebugGlobal')
@@ -359,4 +444,3 @@ EndFunc   ;==>___CtrlTest
 If "Ctrl.au3" = @ScriptName Then
 	___CtrlTest()
 EndIf
-
